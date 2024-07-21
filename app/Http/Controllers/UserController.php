@@ -5,48 +5,43 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Facades\Image;
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
-    public function uploadAvatar(Request $request)
-    {
-        // Validate the uploaded file
+    public function storeAvatar(Request $request) {
         $request->validate([
-            'avatar' => 'required|image|max:3000', // Validate image and size
+            'avatar' => 'required|image|max:3000'
         ]);
 
-        // Retrieve the authenticated user
-        $user = Auth::user();
+        $user = auth()->user();
 
-        // Generate a unique filename
-        $filename = 'avatar_' . $user->id . '_' . uniqid() . '.jpg';
+        $filename = $user->id . '-' . uniqid() . '.jpg';
 
-        // Process the image
-        $image = Image::make($request->file('avatar'))
-                    ->fit(120) // Resize and crop to 120x120
-                    ->encode('jpg'); // Encode as JPG
+        $imgData = Image::make($request->file('avatar'))->fit(120)->encode('jpg');
+        Storage::put('public/avatars/' . $filename, $imgData);
 
-        // Store the processed image
-        Storage::put('public/avatars/' . $filename, (string) $image);
+        $oldAvatar = $user->avatar;
 
-        // Optionally, update the user's avatar path in the database
-        // $user->avatar = 'avatars/' . $filename;
-        // $user->save();
+        $user->avatar = $filename;
+        $user->save();
 
-        return response()->json(['message' => 'Avatar uploaded successfully', 'filename' => $filename]);    
+        if ($oldAvatar != "/fallback-avatar.jpg") {
+            Storage::delete(str_replace("/storage/", "public/", $oldAvatar));
+        }
+
+        return back()->with('success', 'Congrats on the new avatar.');
     }
-    
+
     public function showAvatarForm() {
         return view('avatar-form');
     }
 
     public function profile(User $user) {
-        return view('profile-posts', ['username' => $user->username, 'posts' => $user->posts()->latest()->get(), 'postCount' => $user->posts()->count()]);
+        return view('profile-posts', ['avatar' => $user->avatar, 'username' => $user->username, 'posts' => $user->posts()->latest()->get(), 'postCount' => $user->posts()->count()]);
     }
-    
+
     public function logout() {
         auth()->logout();
         return redirect('/')->with('success', 'You are now logged out.');

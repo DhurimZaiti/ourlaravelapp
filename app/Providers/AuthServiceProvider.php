@@ -13,7 +13,7 @@ class AuthServiceProvider extends ServiceProvider
      * @var array<class-string, class-string>
      */
     protected $policies = [
-        Post::class =>  PostPolicy::class
+        Post::class => PostPolicy::class
         // 'App\Models\Model' => 'App\Policies\ModelPolicy',
     ];
 
@@ -22,9 +22,7 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $this->registerPolicies();
-
-        Gate::define('visitAdminPages', function($user){
+        Gate::define('visitAdminPages', function($user) {
             return $user->isAdmin === 1;
         });
     }
