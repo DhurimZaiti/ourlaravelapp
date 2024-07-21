@@ -5,12 +5,48 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Facades\Image;
 
 class UserController extends Controller
 {
+    public function uploadAvatar(Request $request)
+    {
+        // Validate the uploaded file
+        $request->validate([
+            'avatar' => 'required|image|max:3000', // Validate image and size
+        ]);
+
+        // Retrieve the authenticated user
+        $user = Auth::user();
+
+        // Generate a unique filename
+        $filename = 'avatar_' . $user->id . '_' . uniqid() . '.jpg';
+
+        // Process the image
+        $image = Image::make($request->file('avatar'))
+                    ->fit(120) // Resize and crop to 120x120
+                    ->encode('jpg'); // Encode as JPG
+
+        // Store the processed image
+        Storage::put('public/avatars/' . $filename, (string) $image);
+
+        // Optionally, update the user's avatar path in the database
+        // $user->avatar = 'avatars/' . $filename;
+        // $user->save();
+
+        return response()->json(['message' => 'Avatar uploaded successfully', 'filename' => $filename]);    
+    }
+    
+    public function showAvatarForm() {
+        return view('avatar-form');
+    }
+
     public function profile(User $user) {
         return view('profile-posts', ['username' => $user->username, 'posts' => $user->posts()->latest()->get(), 'postCount' => $user->posts()->count()]);
     }
+    
     public function logout() {
         auth()->logout();
         return redirect('/')->with('success', 'You are now logged out.');
