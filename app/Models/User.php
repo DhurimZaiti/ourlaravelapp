@@ -49,15 +49,14 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
-    public function feedPosts() { 
-        // This method requires 6 arguments, and they are: The post class, the follow class,the foreign key on intermediate table
-        // The foreign key on the interested model, the local key and the local key on the intermediate table (in this case the followed user table column in "follows" table).
+    public function feedPosts() {
         return $this->hasManyThrough(Post::class, Follow::class, 'user_id', 'user_id', 'id', 'followeduser');
     }
 
     public function followers() {
         return $this->hasMany(Follow::class, 'followeduser');
     }
+
     public function followingTheseUsers() {
         return $this->hasMany(Follow::class, 'user_id');
     }
@@ -65,6 +64,4 @@ class User extends Authenticatable
     public function posts() {
         return $this->hasMany(Post::class, 'user_id');
     }
-
-
 }
